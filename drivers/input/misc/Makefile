@@ -87,7 +87,6 @@ obj-$(CONFIG_SENSORS_YL_HALL)		+= coolpad_hall.o
 obj-$(CONFIG_SENSORS_YL_PARAMS)		+= yl_sensor_params.o
 
 obj-$(CONFIG_SENSORS_BMA2X2)	+= bma2x2.o
-obj-$(CONFIG_SENSORS_LTR553)	+= ltr553.o
 obj-$(CONFIG_SENSORS_LTR559)	+= ltr559-lc.o
 
 ifeq ($(CONFIG_SENSORS_BMA2X2_ENABLE_INT1),y)
@@ -124,7 +123,10 @@ ifeq ($(CONFIG_SENSORS_BMG_FIFO),y)
 	EXTRA_CFLAGS += -DBMG_USE_FIFO -DBMG_USE_BASIC_I2C_FUNC
 endif
 
-obj-$(CONFIG_SENSORS_BMM050)    += bmm050_driver.o bmm050.o
+obj-$(CONFIG_SENSORS_BMM050) 	+= bmm050_driver.o bmm050.o
+obj-$(CONFIG_SENSORS_BMI160_SPI) += bmi160_spi.o
+
+obj-$(CONFIG_HALL)		+= hall.o
 ifeq ($(CONFIG_SENSORS_BMM050),y)
 	EXTRA_CFLAGS += -DBMM_USE_BASIC_I2C_FUNC -DCONFIG_BMM_USE_PLATFORM_DATA
 endif
