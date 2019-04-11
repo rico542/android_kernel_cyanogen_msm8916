@@ -34,6 +34,7 @@
 		qcom,msm-snd-card-id = <0>;
 		qcom,msm-ext-pa = "primary";
 		qcom,msm-codec-type = "internal";
+		qcom,spk_ext_pa = <&msm_gpio 114 0x0>;
 		qcom,msm-mbhc-hphl-swh = <1>;
 		qcom,msm-mbhc-gnd-swh = <0>;
 		qcom,msm-hs-micbias-type = "internal";
@@ -48,9 +49,13 @@
 			"AMIC2", "MIC BIAS Internal2",
 			"AMIC3", "MIC BIAS Internal1";
 		pinctrl-names = "cdc_lines_act",
-				"cdc_lines_sus";
+				"cdc_lines_sus", //;
+				"spk_ext_pa_act",
+				"spk_ext_pa_sus"; //,
 		pinctrl-0 = <&cdc_pdm_lines_act>;
 		pinctrl-1 = <&cdc_pdm_lines_sus>;
+		pinctrl-2 = <&spk_ext_pa_active>;
+		pinctrl-3 = <&spk_ext_pa_suspend>;
 		asoc-platform = <&pcm0>, <&pcm1>, <&voip>, <&voice>,
 				<&loopback>, <&compress>, <&hostless>,
 				<&afe>, <&lsm>, <&routing>, <&lpa>;
