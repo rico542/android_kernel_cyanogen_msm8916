@@ -15,11 +15,16 @@
 #include <linux/moduleparam.h>
 #include <linux/init.h>
 #include <linux/bitops.h>
+#if defined(CONFIG_AUDIO_CODEC_FLORIDA) || defined(CONFIG_AUDIO_CODEC_WM8998_SWITCH)
 #include <linux/delay.h>
+#endif
 #include <linux/err.h>
 #include <linux/platform_device.h>
 #include <linux/regulator/driver.h>
 #include <linux/regulator/machine.h>
+#include <linux/of.h>
+#include <linux/of_device.h>
+#include <linux/of_gpio.h>
 #include <linux/regulator/of_regulator.h>
 #include <linux/gpio.h>
 #include <linux/slab.h>
@@ -34,7 +39,6 @@
 
 #define ARIZONA_MICSUPP_RANGE1_MAX_SELECTOR 0x14
 #define ARIZONA_MICSUPP_RANGE2_MAX_SELECTOR 0x27
-
 struct arizona_micsupp {
 	struct regulator_dev *regulator;
 	struct arizona *arizona;
@@ -75,13 +79,11 @@ static int arizona_micsupp_list_voltage(struct regulator_dev *rdev,
 	struct arizona_micsupp *micsupp = rdev_get_drvdata(rdev);
 
 	switch (micsupp->arizona->type) {
-	case WM5102:
-	case WM8997:
-	case WM8998:
-	case WM1814:
-		return arizona_micsupp_sel_to_voltage(selector);
-	default:
-		return arizona_micsupp_ext_sel_to_voltage(selector);
+		case WM8280:
+		case WM5110:
+			return arizona_micsupp_ext_sel_to_voltage(selector);
+		default:
+			return arizona_micsupp_sel_to_voltage(selector);
 	}
 }
 
@@ -102,19 +104,21 @@ static void arizona_micsupp_check_cp(struct work_struct *work)
 	}
 
 	if (dapm) {
-		mutex_lock_nested(&dapm->card->dapm_mutex,
-				  SND_SOC_DAPM_CLASS_RUNTIME);
+#if defined(CONFIG_AUDIO_CODEC_FLORIDA) || defined(CONFIG_AUDIO_CODEC_WM8998_SWITCH)
 
+#else
+		mutex_lock(&dapm->card->dapm_mutex);
+#endif
 		if ((reg & (ARIZONA_CPMIC_ENA | ARIZONA_CPMIC_BYPASS)) ==
-		    ARIZONA_CPMIC_ENA) {
+		    ARIZONA_CPMIC_ENA)
 			snd_soc_dapm_force_enable_pin(dapm, "MICSUPP");
-			arizona->micvdd_regulated = true;
-		} else {
+		else
 			snd_soc_dapm_disable_pin(dapm, "MICSUPP");
-			arizona->micvdd_regulated = false;
-		}
+#if defined(CONFIG_AUDIO_CODEC_FLORIDA) || defined(CONFIG_AUDIO_CODEC_WM8998_SWITCH)
 
+#else
 		mutex_unlock(&dapm->card->dapm_mutex);
+#endif
 
 		snd_soc_dapm_sync(dapm);
 	}
@@ -151,7 +155,9 @@ static int arizona_micsupp_set_bypass(struct regulator_dev *rdev, bool ena)
 	int ret;
 
 	ret = regulator_set_bypass_regmap(rdev, ena);
+#if defined(CONFIG_AUDIO_CODEC_FLORIDA) || defined(CONFIG_AUDIO_CODEC_WM8998_SWITCH)
 	udelay(1000);
+#endif
 	if (ret == 0)
 		schedule_work(&micsupp->check_cp_work);
 
@@ -254,43 +260,12 @@ static int arizona_micsupp_of_get_pdata(struct arizona *arizona,
 			init_data->consumer_supplies = &micsupp->supply;
 			init_data->num_consumer_supplies = 1;
 
-			init_data->constraints.valid_ops_mask |=
-					REGULATOR_CHANGE_BYPASS;
-
 			pdata->micvdd = init_data;
 		}
 	}
 
 	return 0;
 }
-
-static unsigned int arizona_get_max_micbias(struct arizona *arizona)
-{
-	unsigned int num_micbias, i, max_micbias, micbias_mv;
-	int ret;
-
-	arizona_get_num_micbias(arizona, &num_micbias, NULL);
-
-	max_micbias = 0;
-	for (i = 0; i < num_micbias; i++) {
-		ret = regmap_read(arizona->regmap,
-			ARIZONA_MIC_BIAS_CTRL_1 + i, &micbias_mv);
-		if (ret != 0) {
-			dev_err(arizona->dev,
-				"Failed to read micbias level: %d\n", ret);
-			return 0;
-		}
-
-		micbias_mv = (micbias_mv & ARIZONA_MICB1_LVL_MASK) >>
-			ARIZONA_MICB1_LVL_SHIFT;
-		micbias_mv = (1500) + (100 * micbias_mv);
-		if (micbias_mv > max_micbias)
-			max_micbias = micbias_mv;
-	}
-
-	return max_micbias * 1000;
-}
-
 static int arizona_micsupp_probe(struct platform_device *pdev)
 {
 	struct arizona *arizona = dev_get_drvdata(pdev->dev.parent);
@@ -298,7 +273,6 @@ static int arizona_micsupp_probe(struct platform_device *pdev)
 	struct regulator_config config = { };
 	struct arizona_micsupp *micsupp;
 	int ret;
-	unsigned int max_micbias;
 
 	micsupp = devm_kzalloc(&pdev->dev, sizeof(*micsupp), GFP_KERNEL);
 	if (micsupp == NULL) {
@@ -315,16 +289,14 @@ static int arizona_micsupp_probe(struct platform_device *pdev)
 	 * platform data if provided.
 	 */
 	switch (arizona->type) {
-	case WM5102:
-	case WM8997:
-	case WM8998:
-	case WM1814:
-		desc = &arizona_micsupp;
-		micsupp->init_data = arizona_micsupp_default;
-		break;
-	default:
+	case WM8280:
+	case WM5110:
 		desc = &arizona_micsupp_ext;
 		micsupp->init_data = arizona_micsupp_ext_default;
+		break;
+	default:
+		desc = &arizona_micsupp;
+		micsupp->init_data = arizona_micsupp_default;
 		break;
 	}
 	micsupp->init_data.consumer_supplies = &micsupp->supply;
@@ -342,45 +314,23 @@ static int arizona_micsupp_probe(struct platform_device *pdev)
 				return ret;
 		}
 	}
-
-	max_micbias = arizona_get_max_micbias(arizona);
-	if (max_micbias) {
-		/* micvdd must be 200mV more than maximum micbias */
-		max_micbias += 200000;
-		if (micsupp->init_data.constraints.max_uV >= max_micbias) {
-			micsupp->init_data.constraints.max_uV = max_micbias;
-			micsupp->init_data.constraints.min_uV = max_micbias;
-			micsupp->init_data.constraints.apply_uV = true;
-			micsupp->init_data.constraints.valid_ops_mask &=
-				~REGULATOR_CHANGE_VOLTAGE;
-		}
-	}
-
 	if (arizona->pdata.micvdd)
 		config.init_data = arizona->pdata.micvdd;
 	else
 		config.init_data = &micsupp->init_data;
-
-	if (max_micbias) {
-		if (config.init_data->constraints.max_uV < max_micbias)
-			dev_err(arizona->dev, "micvdd must be atleast set to %duV\n",
-				max_micbias);
-	}
 
 	/* Default to regulated mode until the API supports bypass */
 	regmap_update_bits(arizona->regmap, ARIZONA_MIC_CHARGE_PUMP_1,
 			   ARIZONA_CPMIC_BYPASS, 0);
 
 	micsupp->regulator = regulator_register(desc, &config);
-
-	of_node_put(config.of_node);
-
 	if (IS_ERR(micsupp->regulator)) {
 		ret = PTR_ERR(micsupp->regulator);
 		dev_err(arizona->dev, "Failed to register mic supply: %d\n",
 			ret);
 		return ret;
 	}
+	of_node_put(config.of_node);
 
 	platform_set_drvdata(pdev, micsupp);
 

@@ -23,13 +23,12 @@
 #include "arizona.h"
 
 static int arizona_i2c_probe(struct i2c_client *i2c,
-			     const struct i2c_device_id *id)
+					  const struct i2c_device_id *id)
 {
 	struct arizona *arizona;
 	const struct regmap_config *regmap_config;
-	const struct regmap_config *regmap_32bit_config = NULL;
-	unsigned long type;
 	int ret;
+	int64_t type;
 
 	if (i2c->dev.of_node)
 		type = arizona_of_get_type(&i2c->dev);
@@ -53,40 +52,15 @@ static int arizona_i2c_probe(struct i2c_client *i2c,
 		regmap_config = &wm8997_i2c_regmap;
 		break;
 #endif
-#ifdef CONFIG_MFD_VEGAS
+#ifdef CONFIG_MFD_WM8998
 	case WM8998:
 	case WM1814:
-		regmap_config = &vegas_i2c_regmap;
-		break;
-#endif
-#ifdef CONFIG_MFD_CLEARWATER
-	case WM8285:
-	case WM1840:
-		regmap_config = &clearwater_16bit_i2c_regmap;
-		regmap_32bit_config = &clearwater_32bit_i2c_regmap;
-		break;
-#endif
-#ifdef CONFIG_MFD_MARLEY
-	case CS47L35:
-		regmap_config = &marley_16bit_i2c_regmap;
-		regmap_32bit_config = &marley_32bit_i2c_regmap;
-		break;
-#endif
-#ifdef CONFIG_MFD_MOON
-	case CS47L90:
-	case CS47L91:
-		regmap_config = &moon_16bit_i2c_regmap;
-		regmap_32bit_config = &moon_32bit_i2c_regmap;
-		break;
-#endif
-#ifdef CONFIG_MFD_CS47L15
-	case CS47L15:
-		regmap_config = &cs47l15_16bit_i2c_regmap;
-		regmap_32bit_config = &cs47l15_32bit_i2c_regmap;
+		regmap_config = &wm8998_i2c_regmap;
 		break;
 #endif
 	default:
-		dev_err(&i2c->dev, "Unknown device type %ld\n", type);
+		dev_err(&i2c->dev, "Unknown device type %ld\n",
+			id->driver_data);
 		return -EINVAL;
 	}
 
@@ -102,21 +76,10 @@ static int arizona_i2c_probe(struct i2c_client *i2c,
 		return ret;
 	}
 
-	if (regmap_32bit_config) {
-		arizona->regmap_32bit = devm_regmap_init_i2c(i2c,
-							   regmap_32bit_config);
-		if (IS_ERR(arizona->regmap_32bit)) {
-			ret = PTR_ERR(arizona->regmap_32bit);
-			dev_err(&i2c->dev,
-				"Failed to allocate dsp register map: %d\n",
-				ret);
-			return ret;
-		}
-	}
-
-	arizona->type = type;
+	arizona->type = id->driver_data;
 	arizona->dev = &i2c->dev;
 	arizona->irq = i2c->irq;
+	printk("%s, dev=%s, irq=%d\n", __func__, dev_name(&i2c->dev), i2c->irq);
 
 	return arizona_dev_init(arizona);
 }
@@ -136,13 +99,6 @@ static const struct i2c_device_id arizona_i2c_id[] = {
 	{ "wm8997", WM8997 },
 	{ "wm8998", WM8998 },
 	{ "wm1814", WM1814 },
-	{ "wm8285", WM8285 },
-	{ "wm1840", WM1840 },
-	{ "cs47l15", CS47L15 },
-	{ "cs47l35", CS47L35 },
-	{ "cs47l85", WM8285 },
-	{ "cs47l90", CS47L90 },
-	{ "cs47l91", CS47L91 },
 	{ }
 };
 MODULE_DEVICE_TABLE(i2c, arizona_i2c_id);

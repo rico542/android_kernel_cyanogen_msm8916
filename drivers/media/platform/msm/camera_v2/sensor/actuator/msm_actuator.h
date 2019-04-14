@@ -29,11 +29,17 @@
 
 struct msm_actuator_ctrl_t;
 
+#ifdef CONFIG_VEGETALTE_COMMON
+enum msm_actuator_state_t {
+	ACTUATOR_POWER_UP,
+	ACTUATOR_POWER_DOWN,
+};
+#else
 enum msm_actuator_state_t {
 	ACTUATOR_POWER_DOWN,
 	ACTUATOR_POWER_UP,
 };
-
+#endif
 struct msm_actuator_func_tbl {
 	int32_t (*actuator_i2c_write_b_af)(struct msm_actuator_ctrl_t *,
 			uint8_t,
@@ -102,6 +108,7 @@ struct msm_actuator_ctrl_t {
 	struct msm_actuator_vreg vreg_cfg;
 	struct park_lens_data_t park_lens;
 	uint32_t max_code_size;
+	enum actuator_initial_position_type initial_position_type;
 };
 
 #endif

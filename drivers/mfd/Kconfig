@@ -1005,6 +1005,9 @@ config MFD_ARIZONA
 	select REGMAP
 	select REGMAP_IRQ
 	select MFD_CORE
+	select SND_SOC_ARIZONA
+	select SND_SOC_FLORIDA
+	select SND_SOC_WM8998
 	bool
 
 config MFD_ARIZONA_I2C
@@ -1039,6 +1042,12 @@ config MFD_FLORIDA
 	help
 	  Support for Wolfson Microelectronics Florida class low power audio SoC
 	  such as the WM8280
+
+config MFD_WM8998
+	bool "Support Wolfson Microelectronics WM8998"
+	depends on MFD_ARIZONA
+	help
+	  Support for Wolfson Microelectronics WM8998 low power audio SoC
 
 config MFD_VEGAS
 	bool "Support Wolfson Microelectronics Vegas"

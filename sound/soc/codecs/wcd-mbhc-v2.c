@@ -1265,6 +1265,61 @@ static void wcd_mbhc_detect_plug_type(struct wcd_mbhc *mbhc)
 	wcd_schedule_hs_detect_plug(mbhc, &mbhc->correct_plug_swch);
 	pr_debug("%s: leave\n", __func__);
 }
+#ifdef WCD_MBHC_HS_WAKEUP
+static void wcd_mbhc_report_wakeup(struct wcd_mbhc *mbhc, bool insert)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&mbhc->fb_lock, flags);
+	if (!mbhc->fb_off) {
+		pr_debug("%s: insert = %d, fb_off = %d\n",
+			__func__, insert, mbhc->fb_off);
+		spin_unlock_irqrestore(&mbhc->fb_lock, flags);
+		return;
+	}
+	spin_unlock_irqrestore(&mbhc->fb_lock, flags);
+
+	pr_notice("%s: report WAKEUP\n", __func__);
+	mbhc->buttons_pressed |= SND_JACK_BTN_5;
+
+	wcd_mbhc_jack_report(mbhc, &mbhc->button_jack,
+		mbhc->buttons_pressed, mbhc->buttons_pressed);
+	wcd_mbhc_jack_report(mbhc, &mbhc->button_jack,
+		0, mbhc->buttons_pressed);
+
+	mbhc->buttons_pressed &= ~SND_JACK_BTN_5;
+}
+
+#include <linux/fb.h>
+static int wcd_fb_notifier_callback(struct notifier_block *self,
+	unsigned long event, void *data)
+{
+	struct fb_event *evdata = data;
+	int *blank;
+	unsigned long flags;
+	struct wcd_mbhc *mbhc =
+		container_of(self, struct wcd_mbhc, fb_notif);
+
+	if (evdata && evdata->data && event == FB_EVENT_BLANK &&
+			mbhc) {
+		blank = evdata->data;
+		pr_debug("%s: blank = %d\n", __func__, *blank);
+		spin_lock_irqsave(&mbhc->fb_lock, flags);
+		if (*blank == FB_BLANK_POWERDOWN)
+			mbhc->fb_off = true;
+		else if (*blank == FB_BLANK_UNBLANK ||
+			*blank == FB_BLANK_NORMAL)
+			mbhc->fb_off = false;
+		else
+			pr_debug("%s: unknown fb action: %d\n",
+				__func__, *blank);
+		spin_unlock_irqrestore(&mbhc->fb_lock, flags);
+	}
+
+	return 0;
+}
+#endif
+
 
 static void wcd_mbhc_swch_irq_handler(struct wcd_mbhc *mbhc)
 {

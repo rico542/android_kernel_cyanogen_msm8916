@@ -1,7 +1,6 @@
 /*
- * arizona.h  --  WM5102 MFD internals
+ * wm5102.h  --  WM5102 MFD internals
  *
- * Copyright 2014 Cirrus Logic
  * Copyright 2012 Wolfson Microelectronics plc
  *
  * Author: Mark Brown <broonie@opensource.wolfsonmicro.com>
@@ -25,70 +24,47 @@ extern const struct regmap_config wm5102_spi_regmap;
 
 extern const struct regmap_config florida_i2c_regmap;
 extern const struct regmap_config florida_spi_regmap;
+#if defined(CONFIG_AUDIO_CODEC_FLORIDA)
 
-extern const struct regmap_config clearwater_16bit_i2c_regmap;
-extern const struct regmap_config clearwater_16bit_spi_regmap;
-extern const struct regmap_config clearwater_32bit_spi_regmap;
-extern const struct regmap_config clearwater_32bit_i2c_regmap;
+extern const struct regmap_config wm5110_i2c_regmap;
+extern const struct regmap_config wm5110_spi_regmap;
+extern const struct regmap_config wm8285_16bit_i2c_regmap;
+extern const struct regmap_config wm8285_16bit_spi_regmap;
+extern const struct regmap_config wm8285_32bit_spi_regmap;
+extern const struct regmap_config wm8285_32bit_i2c_regmap;
+extern const struct regmap_config cs47l24_spi_regmap; 
+extern const struct regmap_irq_chip wm8285_irq; 
+extern const struct regmap_irq_chip cs47l24_irq;
 
-extern const struct regmap_config cs47l15_16bit_i2c_regmap;
-extern const struct regmap_config cs47l15_16bit_spi_regmap;
-extern const struct regmap_config cs47l15_32bit_spi_regmap;
-extern const struct regmap_config cs47l15_32bit_i2c_regmap;
-
-extern const struct regmap_config marley_16bit_i2c_regmap;
-extern const struct regmap_config marley_16bit_spi_regmap;
-extern const struct regmap_config marley_32bit_spi_regmap;
-extern const struct regmap_config marley_32bit_i2c_regmap;
-
-extern const struct regmap_config moon_16bit_i2c_regmap;
-extern const struct regmap_config moon_16bit_spi_regmap;
-extern const struct regmap_config moon_32bit_spi_regmap;
-extern const struct regmap_config moon_32bit_i2c_regmap;
+#endif
 
 extern const struct regmap_config wm8997_i2c_regmap;
-
-extern const struct regmap_config vegas_i2c_regmap;
-
-extern const struct regmap_config largo_spi_regmap;
-
+extern const struct regmap_config wm8998_i2c_regmap;
 extern const struct dev_pm_ops arizona_pm_ops;
 
 extern const struct of_device_id arizona_of_match[];
-
 extern const struct regmap_irq_chip wm5102_aod;
 extern const struct regmap_irq_chip wm5102_irq;
 
 extern const struct regmap_irq_chip florida_aod;
 extern const struct regmap_irq_chip florida_irq;
 extern const struct regmap_irq_chip florida_revd_irq;
-
-extern const struct regmap_irq_chip cs47l15_irq;
-extern const struct regmap_irq_chip clearwater_irq;
-extern const struct regmap_irq_chip moon_irq;
-
 extern const struct regmap_irq_chip wm8997_aod;
 extern const struct regmap_irq_chip wm8997_irq;
 
-extern struct regmap_irq_chip vegas_aod;
-extern struct regmap_irq_chip vegas_irq;
-
-extern const struct regmap_irq_chip largo_irq;
-
-extern const struct regmap_irq_chip marley_irq;
-
+extern struct regmap_irq_chip wm8998_aod;
+extern struct regmap_irq_chip wm8998_irq;
 int arizona_dev_init(struct arizona *arizona);
 int arizona_dev_exit(struct arizona *arizona);
 int arizona_irq_init(struct arizona *arizona);
 int arizona_irq_exit(struct arizona *arizona);
 
 #ifdef CONFIG_OF
-unsigned long arizona_of_get_type(struct device *dev);
+int64_t arizona_of_get_type(struct device *dev);
 #else
-static inline unsigned long arizona_of_get_type(struct device *dev)
+static inline int arizona_of_get_type(struct device *dev)
 {
 	return 0;
 }
 #endif
-
 #endif

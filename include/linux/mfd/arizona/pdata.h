@@ -45,6 +45,18 @@
 #define CLEARWATER_GPN_LVL_SHIFT                         15  /* GPN_LVL */
 #define CLEARWATER_GPN_LVL_WIDTH                          1  /* GPN_LVL */
 
+#if defined(CONFIG_AUDIO_CODEC_FLORIDA)
+#define WM8285_GPN_LVL                           0x8000  /* GPN_LVL */
+#define WM8285_GPN_LVL_MASK                      0x8000  /* GPN_LVL */
+#define WM8285_GPN_LVL_SHIFT                         15  /* GPN_LVL */
+#define WM8285_GPN_LVL_WIDTH                          1  /* GPN_LVL */
+
+#define ARIZONA_MAX_GPIO_REGS 5	
+#define WM8285_MAX_GPIO_REGS 80
+#else
+#define ARIZONA_MAX_GPIO 5
+#endif
+
 #define ARIZONA_MAX_GPIO_REGS 5
 #define CLEARWATER_MAX_GPIO_REGS 80
 
@@ -55,8 +67,11 @@
 
 #define ARIZONA_MAX_INPUT 12
 
-#define ARIZONA_MAX_MICBIAS 4
-#define ARIZONA_MAX_CHILD_MICBIAS 4
+#if defined(CONFIG_AUDIO_CODEC_FLORIDA)
+#define ARIZONA_MAX_MICBIAS 4	
+#else
+#define ARIZONA_MAX_MICBIAS 3
+#endif#define ARIZONA_MAX_CHILD_MICBIAS 4
 
 #define WM5102_NUM_MICBIAS        3
 #define CLEARWATER_NUM_MICBIAS    4
@@ -80,6 +95,12 @@
 /* Treat INT_MAX impedance as open circuit */
 #define ARIZONA_HP_Z_OPEN INT_MAX
 
+#if defined(CONFIG_AUDIO_CODEC_FLORIDA)
+#define ARIZONA_MAX_DSP	7  
+#else
+#define ARIZONA_MAX_DSP	4
+#endif
+
 #define ARIZONA_MAX_DSP	7
 
 struct regulator_init_data;
@@ -89,9 +110,12 @@ struct arizona_jd_state;
 struct arizona_micbias {
 	int mV;                    /** Regulated voltage */
 	unsigned int ext_cap:1;    /** External capacitor fitted */
-	/** Actively discharge */
+	unsigned int discharge:1;	/** Actively discharge */
 	unsigned int discharge[ARIZONA_MAX_CHILD_MICBIAS];
 	unsigned int soft_start:1; /** Disable aggressive startup ramp rate */
+#if defined(CONFIG_AUDIO_CODEC_FLORIDA)
+	unsigned int fast_start:1; /** Enable aggressive startup ramp rate */ 
+#endif
 	unsigned int bypass:1;     /** Use bypass mode */
 };
 
@@ -116,6 +140,35 @@ struct arizona_pdata {
 	int reset;      /** GPIO controlling /RESET, if any */
 	int ldoena;     /** GPIO controlling LODENA, if any */
 
+#if defined(CONFIG_LCT_WM8998_GPIO_CTRL)
+	int ena_ldo;
+	int ldo_enable;
+	int i2c_addr;
+	const char *clk_src_name;
+	struct clk *i2s_mclk;
+	struct pinctrl *gpio_pinctrl;
+	struct pinctrl_state *gpio_state_active;
+	struct pinctrl_state *gpio_state_suspend;
+#endif
+
+#if defined(CONFIG_AUDIO_CODEC_WM8998_SWITCH)
+	int ldo_spk;
+	int (*hp_volume_cb)(void *info, int volume);
+#endif
+
+#if defined(CONFIG_LCT_FLORIDA_GPIO_CTRL)		
+	int ena_ldo;
+	int ldo_enable;
+	int ldo_spk;
+	//int i2c_addr;
+	int spi_addr;
+	const char *clk_src_name;
+	struct clk *spi_mclk;
+	struct pinctrl *gpio_pinctrl;
+	struct pinctrl_state *gpio_state_active;
+	struct pinctrl_state *gpio_state_suspend;
+#endif
+
 	/** Regulator configuration for MICVDD */
 	struct regulator_init_data *micvdd;
 
@@ -138,7 +191,12 @@ struct arizona_pdata {
 	 * values 0x1..0xffff = set to this value
 	 * >0xffff = set to 0
 	 */
-	unsigned int gpio_defaults[CLEARWATER_MAX_GPIO_REGS];
+#if defined(CONFIG_AUDIO_CODEC_FLORIDA)
+	unsigned int gpio_defaults[WM8285_MAX_GPIO_REGS];
+#else
+	int gpio_defaults[ARIZONA_MAX_GPIO];
+
+#endif
 
 	/**
 	 * Maximum number of channels clocks will be generated for,

@@ -1,6 +1,5 @@
-/* drivers/misc/akm09911.c - akm09911 compass driver
+/* drivers/input/misc/akm09911.c - akm09911 compass driver
  *
- * Copyright (c) 2014-2015, Linux Foundation. All rights reserved.
  * Copyright (C) 2007-2008 HTC Corporation.
  * Author: Hou-Kun Chen <houkun.chen@gmail.com>
  *
@@ -15,8 +14,7 @@
  *
  */
 
-/*#define DEBUG*/
-/*#define VERBOSE_DEBUG*/
+
 
 #include <linux/delay.h>
 #include <linux/device.h>
@@ -31,21 +29,21 @@
 #include <linux/slab.h>
 #include <linux/uaccess.h>
 #include <linux/workqueue.h>
+
 #include <linux/akm09911.h>
 
 #define AKM_DEBUG_IF			1
-#ifdef CONFIG_MACH_T86519A1
-#define AKM_HAS_RESET			0
-#else
 #define AKM_HAS_RESET			1
-#endif
 #define AKM_INPUT_DEVICE_NAME	"compass"
 #define AKM_INPUT_DEV_NAME	"akm09911"
+
 #define AKM_DRDY_TIMEOUT_MS		100
 #define AKM_BASE_NUM			10
 
 #define BYTES_PER_LINE                    16
+
 #define BMM_DELAY_MIN (1)
+
 
 enum mag_sensor_op_mode_t {
 	MAG_NORMAL_MODE = 0,
@@ -94,7 +92,7 @@ struct akm_compass_data {
 	atomic_t	active;
 	atomic_t	drdy;
 
-	char	layout;
+	char layout;
 	int	irq;
 	int	gpio_rstn;
 	/*support BSX*/
@@ -105,6 +103,7 @@ struct akm_compass_data {
 	u8 enable:1;
 	uint8_t op_mode;
 	struct bosch_sensor_specific *bst_pd;
+
 };
 
 static struct akm_compass_data *s_akm;
@@ -394,6 +393,7 @@ static int AKECS_Reset(
 	/* Clear status */
 	akm->is_busy = 0;
 	atomic_set(&akm->drdy, 0);
+
 	mutex_unlock(&akm->sensor_mutex);
 	/***** unlock *****/
 
@@ -447,6 +447,7 @@ static int akm_get_op_mode(
 	return err;
 
 }
+
 
 static void AKECS_SetYPR(
 	struct akm_compass_data *akm,
@@ -1296,6 +1297,8 @@ static ssize_t akm_sysfs_regs_show(
 }
 #endif
 
+
+
 static int akm_read_mdataxyz_s16(struct akm_compass_data *akm,
 			struct akm0911_mdata_s16 *value)
 {
@@ -1327,11 +1330,15 @@ static void bmm_work_func(struct work_struct *work)
 		container_of((struct delayed_work *)work,
 			struct akm_compass_data, work);
 	struct akm0911_mdata_s16 value;
+
+
 	unsigned long delay =
 		msecs_to_jiffies(atomic_read(&client_data->wk_delay));
 
 	if (MAG_FORCED_MODE != client_data->op_mode)
 		AKECS_SetMode(client_data, MAG_FORCED_MODE);
+
+
 
 	akm_read_mdataxyz_s16(client_data, &value);
 	if (value.drdy) {
@@ -1345,6 +1352,7 @@ static void bmm_work_func(struct work_struct *work)
 	} else
 		dev_err(&client_data->i2c->dev, "data not ready");
 
+
 	input_report_abs(client_data->input, ABS_X, client_data->value.datax);
 	input_report_abs(client_data->input, ABS_Y, client_data->value.datay);
 	input_report_abs(client_data->input, ABS_Z, client_data->value.dataz);
@@ -1353,6 +1361,7 @@ static void bmm_work_func(struct work_struct *work)
 
 	schedule_delayed_work(&client_data->work, delay);
 }
+
 
 static ssize_t akm_value_show(
 	struct device *dev, struct device_attribute *attr, char *buf)
@@ -1368,10 +1377,12 @@ static ssize_t akm_value_show(
 /*	err = AKECS_SetMode(akm, AKM_MODE_FUSE_ACCESS);
 	if (err < 0)
 		return err;
+
 	asa[0] = AKM_FUSE_1ST_ADDR;
 	err = akm_i2c_rxdata(akm->i2c, asa, 3);
 	if (err < 0)
 		return err;
+
 	err = AKECS_SetMode(akm, AKM_MODE_POWERDOWN);
 	if (err < 0)
 		return err;
@@ -1910,6 +1921,7 @@ static irqreturn_t akm_compass_irq(int irq, void *handle)
 		goto work_func_none;
 
 	memcpy(akm->sense_data, buffer, AKM_SENSOR_DATA_SIZE);
+	akm->is_busy = 0;
 
 	mutex_unlock(&akm->sensor_mutex);
 	/***** unlock *****/
@@ -1946,8 +1958,8 @@ static int akm_compass_suspend(struct device *dev)
 static int akm_compass_resume(struct device *dev)
 {
 	struct akm_compass_data *akm = dev_get_drvdata(dev);
-	
 	dev_dbg(&akm->i2c->dev, "resumed\n");
+
 	mutex_lock(&akm->mutex_enable);
 	if (akm->enable) {
 		schedule_delayed_work(&akm->work,
@@ -1955,6 +1967,7 @@ static int akm_compass_resume(struct device *dev)
 					atomic_read(&akm->wk_delay)));
 	}
 	mutex_unlock(&akm->mutex_enable);
+
 	return 0;
 }
 
@@ -1995,79 +2008,6 @@ static int akm09911_i2c_check_device(
 	return err;
 }
 
-static int akm_compass_power_set(struct akm_compass_data *data, bool on)
-{
-	int rc = 0;
-
-	if (!on && data->power_enabled) {
-		rc = regulator_disable(data->vdd);
-		if (rc) {
-			dev_err(&data->i2c->dev,
-				"Regulator vdd disable failed rc=%d\n", rc);
-			goto err_vdd_disable;
-		}
-
-		rc = regulator_disable(data->vio);
-		if (rc) {
-			dev_err(&data->i2c->dev,
-				"Regulator vio disable failed rc=%d\n", rc);
-			goto err_vio_disable;
-		}
-		data->power_enabled = false;
-		return rc;
-	} else if (on && !data->power_enabled) {
-		rc = regulator_enable(data->vdd);
-		if (rc) {
-			dev_err(&data->i2c->dev,
-				"Regulator vdd enable failed rc=%d\n", rc);
-			goto err_vdd_enable;
-		}
-
-		rc = regulator_enable(data->vio);
-		if (rc) {
-			dev_err(&data->i2c->dev,
-				"Regulator vio enable failed rc=%d\n", rc);
-			goto err_vio_enable;
-		}
-		data->power_enabled = true;
-
-		/*
-		 * The max time for the power supply rise time is 50ms.
-		 * Use 80ms to make sure it meets the requirements.
-		 */
-		msleep(80);
-		return rc;
-	} else {
-		dev_warn(&data->i2c->dev,
-				"Power on=%d. enabled=%d\n",
-				on, data->power_enabled);
-		return rc;
-	}
-
-err_vio_enable:
-	regulator_disable(data->vio);
-err_vdd_enable:
-	return rc;
-
-err_vio_disable:
-	if (regulator_enable(data->vdd))
-		dev_warn(&data->i2c->dev, "Regulator vdd enable failed\n");
-err_vdd_disable:
-	return rc;
-}
-
-static int akm_compass_power_init(struct akm_compass_data *data, bool on)
-{
-	int rc;
-
-	if (!on) {
-		if (regulator_count_voltages(data->vdd) > 0)
-			regulator_set_voltage(data->vdd, 0,
-				AKM09911_VDD_MAX_UV);
-
-		regulator_put(data->vdd);
-
-
 #ifdef CONFIG_OF
 static int akm_parse_dt(struct device *dev,
 			struct bosch_sensor_specific *bst_pd)
@@ -2078,16 +2018,16 @@ static int akm_parse_dt(struct device *dev,
 
 	rc = of_property_read_u32(np, "akm,place", &temp_val);
 	if (rc && (rc != -EINVAL)) {
-		dev_err(dev, "Unable to read sensor place parameter\n");
+		dev_err(dev, "Unable to read sensor place paramater\n");
 		return rc;
 	}
-
 	if (temp_val > 7 || temp_val < 0) {
 		dev_err(dev, "Invalid place parameter, use default value 0\n");
 		bst_pd->place = 0;
 	} else {
 		bst_pd->place = temp_val;
 	}
+
 	return 0;
 }
 #else
@@ -2097,7 +2037,7 @@ static int akm_parse_dt(struct device *dev,
 	return -EINVAL;
 }
 #endif
-		
+
 int akm_compass_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	struct akm09911_platform_data *pdata;
@@ -2264,7 +2204,7 @@ int akm_compass_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	return 0;
 
 exit6:
-		misc_deregister(&akm_compass_dev);
+	misc_deregister(&akm_compass_dev);
 exit5:
 	if (s_akm->irq)
 		free_irq(s_akm->irq, s_akm);

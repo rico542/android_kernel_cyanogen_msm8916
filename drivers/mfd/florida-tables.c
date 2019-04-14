@@ -21,7 +21,7 @@
 #define FLORIDA_NUM_AOD_ISR 2
 #define FLORIDA_NUM_ISR 5
 
-static const struct reg_sequence florida_reva_patch[] = {
+static const struct reg_default florida_reva_patch[] = {
 	{ 0x80, 0x3 },
 	{ 0x44, 0x20 },
 	{ 0x45, 0x40 },
@@ -134,7 +134,7 @@ static const struct reg_sequence florida_reva_patch[] = {
 	{ 0x209, 0x002A },
 };
 
-static const struct reg_sequence florida_revb_patch[] = {
+static const struct reg_default florida_revb_patch[] = {
 	{ 0x80, 0x3 },
 	{ 0x36e, 0x0210 },
 	{ 0x370, 0x0210 },
@@ -224,7 +224,7 @@ static const struct reg_sequence florida_revb_patch[] = {
 	{ 0x80, 0x0 },
 };
 
-static const struct reg_sequence florida_revd_patch[] = {
+static const struct reg_default florida_revd_patch[] = {
 	{ 0x80, 0x3 },
 	{ 0x80, 0x3 },
 	{ 0x393, 0x27 },
@@ -249,16 +249,6 @@ static const struct reg_sequence florida_revd_patch[] = {
 	{ 0x80, 0x0 },
 };
 
-/* Add extra headphone write sequence locations */
-static const struct reg_sequence florida_reve_patch[] = {
-	{ 0x80, 0x3 },
-	{ 0x80, 0x3 },
-	{ 0x4b, 0x138 },
-	{ 0x4c, 0x13d },
-	{ 0x80, 0x0 },
-	{ 0x80, 0x0 },
-};
-
 /* We use a function so we can use ARRAY_SIZE() */
 int florida_patch(struct arizona *arizona)
 {
@@ -276,9 +266,7 @@ int florida_patch(struct arizona *arizona)
 					     florida_revd_patch,
 					     ARRAY_SIZE(florida_revd_patch));
 	default:
-		return regmap_register_patch(arizona->regmap,
-					     florida_reve_patch,
-					     ARRAY_SIZE(florida_reve_patch));
+		return 0;
 	}
 }
 EXPORT_SYMBOL_GPL(florida_patch);
@@ -676,8 +664,16 @@ static const struct reg_default florida_reg_default[] = {
 	{ 0x00000008, 0x0019 },    /* R8     - Ctrl IF SPI CFG 1 */
 	{ 0x00000009, 0x0001 },    /* R9     - Ctrl IF I2C1 CFG 1 */
 	{ 0x0000000A, 0x0001 },    /* R10    - Ctrl IF I2C2 CFG 1 */
-	{ 0x0000000B, 0x001A },    /* R11    - Ctrl IF I2C1 CFG 2 */
-	{ 0x0000000C, 0x001A },    /* R12    - Ctrl IF I2C2 CFG 2 */
+	{ 0x0000000B, 0x0036 },    /* R11    - Ctrl IF I2C1 CFG 2 */
+	{ 0x0000000C, 0x0036 },    /* R12    - Ctrl IF I2C2 CFG 2 */
+#if defined(CONFIG_AUDIO_CODEC_FLORIDA)
+//none
+#else
+	{ 0x00000016, 0x0000 },    /* R22    - Write Sequencer Ctrl 0 */
+	{ 0x00000017, 0x0000 },    /* R23    - Write Sequencer Ctrl 1 */
+	{ 0x00000018, 0x0000 },    /* R24    - Write Sequencer Ctrl 2 */
+#endif
+
 	{ 0x00000020, 0x0000 },    /* R32    - Tone Generator 1 */
 	{ 0x00000021, 0x1000 },    /* R33    - Tone Generator 2 */
 	{ 0x00000022, 0x0000 },    /* R34    - Tone Generator 3 */
@@ -688,7 +684,6 @@ static const struct reg_default florida_reg_default[] = {
 	{ 0x00000032, 0x0100 },    /* R50    - PWM Drive 3 */
 	{ 0x00000040, 0x0000 },    /* R64    - Wake control */
 	{ 0x00000041, 0x0000 },    /* R65    - Sequence control */
-	{ 0x00000042, 0x0000 },    /* R66    - Spare Triggers */
 	{ 0x00000061, 0x01FF },    /* R97    - Sample Rate Sequence Select 1 */
 	{ 0x00000062, 0x01FF },    /* R98    - Sample Rate Sequence Select 2 */
 	{ 0x00000063, 0x01FF },    /* R99    - Sample Rate Sequence Select 3 */
@@ -723,12 +718,14 @@ static const struct reg_default florida_reg_default[] = {
 	{ 0x00000154, 0x0000 },    /* R340   - Rate Estimator 3 */
 	{ 0x00000155, 0x0000 },    /* R341   - Rate Estimator 4 */
 	{ 0x00000156, 0x0000 },    /* R342   - Rate Estimator 5 */
-	{ 0x00000171, 0x0002 },    /* R369   - FLL1 Control 1 */
+	{ 0x00000171, 0x0000 },    /* R369   - FLL1 Control 1 */
 	{ 0x00000172, 0x0008 },    /* R370   - FLL1 Control 2 */
 	{ 0x00000173, 0x0018 },    /* R371   - FLL1 Control 3 */
 	{ 0x00000174, 0x007D },    /* R372   - FLL1 Control 4 */
 	{ 0x00000175, 0x0006 },    /* R373   - FLL1 Control 5 */
 	{ 0x00000176, 0x0000 },    /* R374   - FLL1 Control 6 */
+	{ 0x00000177, 0x0281 },    /* R375   - FLL1 Loop Filter Test 1 */
+	{ 0x00000178, 0x0000 },    /* R376   - FLL1 NCO Test 0 */
 	{ 0x00000179, 0x0000 },    /* R376   - FLL1 Control 7 */
 	{ 0x00000181, 0x0000 },    /* R385   - FLL1 Synchroniser 1 */
 	{ 0x00000182, 0x0000 },    /* R386   - FLL1 Synchroniser 2 */
@@ -738,13 +735,20 @@ static const struct reg_default florida_reg_default[] = {
 	{ 0x00000186, 0x0000 },    /* R390   - FLL1 Synchroniser 6 */
 	{ 0x00000187, 0x0001 },    /* R390   - FLL1 Synchroniser 7 */
 	{ 0x00000189, 0x0000 },    /* R393   - FLL1 Spread Spectrum */
+#if defined(CONFIG_AUDIO_CODEC_FLORIDA)
 	{ 0x0000018A, 0x000C },    /* R394   - FLL1 GPIO Clock */
-	{ 0x00000191, 0x0002 },    /* R401   - FLL2 Control 1 */
+#else
+	{ 0x0000018A, 0x0004 },    /* R394   - FLL1 GPIO Clock */
+#endif
+
+	{ 0x00000191, 0x0000 },    /* R401   - FLL2 Control 1 */
 	{ 0x00000192, 0x0008 },    /* R402   - FLL2 Control 2 */
 	{ 0x00000193, 0x0018 },    /* R403   - FLL2 Control 3 */
 	{ 0x00000194, 0x007D },    /* R404   - FLL2 Control 4 */
 	{ 0x00000195, 0x000C },    /* R405   - FLL2 Control 5 */
 	{ 0x00000196, 0x0000 },    /* R406   - FLL2 Control 6 */
+	{ 0x00000197, 0x0000 },    /* R407   - FLL2 Loop Filter Test 1 */
+	{ 0x00000198, 0x0000 },    /* R408   - FLL2 NCO Test 0 */
 	{ 0x00000199, 0x0000 },    /* R408   - FLL2 Control 7 */
 	{ 0x000001A1, 0x0000 },    /* R417   - FLL2 Synchroniser 1 */
 	{ 0x000001A2, 0x0000 },    /* R418   - FLL2 Synchroniser 2 */
@@ -754,22 +758,29 @@ static const struct reg_default florida_reg_default[] = {
 	{ 0x000001A6, 0x0000 },    /* R422   - FLL2 Synchroniser 6 */
 	{ 0x000001A7, 0x0001 },    /* R422   - FLL2 Synchroniser 7 */
 	{ 0x000001A9, 0x0000 },    /* R425   - FLL2 Spread Spectrum */
+#if defined(CONFIG_AUDIO_CODEC_FLORIDA)
 	{ 0x000001AA, 0x000C },    /* R426   - FLL2 GPIO Clock */
+#else
+	{ 0x000001AA, 0x0004 },    /* R426   - FLL2 GPIO Clock */
+#endif
+
 	{ 0x00000200, 0x0006 },    /* R512   - Mic Charge Pump 1 */
 	{ 0x00000210, 0x0184 },    /* R528   - LDO1 Control 1 */
 	{ 0x00000213, 0x03E4 },    /* R531   - LDO2 Control 1 */
-	{ 0x00000218, 0x00E6 },    /* R536   - Mic Bias Ctrl 1 */
-	{ 0x00000219, 0x00E6 },    /* R537   - Mic Bias Ctrl 2 */
-	{ 0x0000021A, 0x00E6 },    /* R538   - Mic Bias Ctrl 3 */
+	{ 0x00000218, 0x01A6 },    /* R536   - Mic Bias Ctrl 1 */
+	{ 0x00000219, 0x01A6 },    /* R537   - Mic Bias Ctrl 2 */
+	{ 0x0000021A, 0x01A6 },    /* R538   - Mic Bias Ctrl 3 */
 	{ 0x00000293, 0x0000 },    /* R659   - Accessory Detect Mode 1 */
 	{ 0x0000029B, 0x0028 },    /* R667   - Headphone Detect 1 */
+	{ 0x0000029C, 0x0000 },    /* R668   - Headphone Detect 2 */
 	{ 0x000002A2, 0x0000 },    /* R674   - Micd clamp control */
 	{ 0x000002A3, 0x1102 },    /* R675   - Mic Detect 1 */
 	{ 0x000002A4, 0x009F },    /* R676   - Mic Detect 2 */
+	{ 0x000002A5, 0x0000 },    /* R677   - Mic Detect 3 */
 	{ 0x000002A6, 0x3737 },    /* R678   - Mic Detect Level 1 */
-	{ 0x000002A7, 0x2C37 },    /* R679   - Mic Detect Level 2 */
+	{ 0x000002A7, 0x372C },    /* R679   - Mic Detect Level 2 */
 	{ 0x000002A8, 0x1422 },    /* R680   - Mic Detect Level 3 */
-	{ 0x000002A9, 0x030A },    /* R681   - Mic Detect Level 4 */
+	{ 0x000002A9, 0x300A },    /* R681   - Mic Detect Level 4 */
 	{ 0x000002C3, 0x0000 },    /* R707   - Mic noise mix control 1 */
 	{ 0x000002CB, 0x0000 },    /* R715   - Isolation control */
 	{ 0x000002D3, 0x0000 },    /* R723   - Jack detect analogue */
@@ -806,53 +817,58 @@ static const struct reg_default florida_reg_default[] = {
 	{ 0x00000409, 0x0022 },    /* R1033  - Output Volume Ramp */
 	{ 0x00000410, 0x0080 },    /* R1040  - Output Path Config 1L */
 	{ 0x00000411, 0x0180 },    /* R1041  - DAC Digital Volume 1L */
-	{ 0x00000412, 0x0081 },    /* R1042  - DAC Volume Limit 1L */
+	{ 0x00000412, 0x0080 },    /* R1042  - DAC Volume Limit 1L */
 	{ 0x00000413, 0x0001 },    /* R1043  - Noise Gate Select 1L */
+#if defined(CONFIG_AUDIO_CODEC_FLORIDA)
+	{ 0x00000414, 0x0000 },    /* R1044  - Output Path Config 1R */
+#else
 	{ 0x00000414, 0x0080 },    /* R1044  - Output Path Config 1R */
+#endif
+
 	{ 0x00000415, 0x0180 },    /* R1045  - DAC Digital Volume 1R */
-	{ 0x00000416, 0x0081 },    /* R1046  - DAC Volume Limit 1R */
+	{ 0x00000416, 0x0080 },    /* R1046  - DAC Volume Limit 1R */
 	{ 0x00000417, 0x0002 },    /* R1047  - Noise Gate Select 1R */
 	{ 0x00000418, 0x0080 },    /* R1048  - Output Path Config 2L */
 	{ 0x00000419, 0x0180 },    /* R1049  - DAC Digital Volume 2L */
-	{ 0x0000041A, 0x0081 },    /* R1050  - DAC Volume Limit 2L */
+	{ 0x0000041A, 0x0080 },    /* R1050  - DAC Volume Limit 2L */
 	{ 0x0000041B, 0x0004 },    /* R1051  - Noise Gate Select 2L */
 	{ 0x0000041C, 0x0080 },    /* R1052  - Output Path Config 2R */
 	{ 0x0000041D, 0x0180 },    /* R1053  - DAC Digital Volume 2R */
-	{ 0x0000041E, 0x0081 },    /* R1054  - DAC Volume Limit 2R */
+	{ 0x0000041E, 0x0080 },    /* R1054  - DAC Volume Limit 2R */
 	{ 0x0000041F, 0x0008 },    /* R1055  - Noise Gate Select 2R */
 	{ 0x00000420, 0x0080 },    /* R1056  - Output Path Config 3L */
 	{ 0x00000421, 0x0180 },    /* R1057  - DAC Digital Volume 3L */
-	{ 0x00000422, 0x0081 },    /* R1058  - DAC Volume Limit 3L */
+	{ 0x00000422, 0x0080 },    /* R1058  - DAC Volume Limit 3L */
 	{ 0x00000423, 0x0010 },    /* R1059  - Noise Gate Select 3L */
 	{ 0x00000424, 0x0080 },    /* R1060  - Output Path Config 3R */
 	{ 0x00000425, 0x0180 },    /* R1061  - DAC Digital Volume 3R */
-	{ 0x00000426, 0x0081 },    /* R1062  - DAC Volume Limit 3R */
+	{ 0x00000426, 0x0080 },    /* R1062  - DAC Volume Limit 3R */
 	{ 0x00000427, 0x0020 },    /* R1063  - Noise Gate Select 3R */
 	{ 0x00000428, 0x0000 },    /* R1064  - Output Path Config 4L */
 	{ 0x00000429, 0x0180 },    /* R1065  - DAC Digital Volume 4L */
-	{ 0x0000042A, 0x0081 },    /* R1066  - Out Volume 4L */
+	{ 0x0000042A, 0x0080 },    /* R1066  - Out Volume 4L */
 	{ 0x0000042B, 0x0040 },    /* R1067  - Noise Gate Select 4L */
 	{ 0x0000042C, 0x0000 },    /* R1068  - Output Path Config 4R */
 	{ 0x0000042D, 0x0180 },    /* R1069  - DAC Digital Volume 4R */
-	{ 0x0000042E, 0x0081 },    /* R1070  - Out Volume 4R */
+	{ 0x0000042E, 0x0080 },    /* R1070  - Out Volume 4R */
 	{ 0x0000042F, 0x0080 },    /* R1071  - Noise Gate Select 4R */
 	{ 0x00000430, 0x0000 },    /* R1072  - Output Path Config 5L */
 	{ 0x00000431, 0x0180 },    /* R1073  - DAC Digital Volume 5L */
-	{ 0x00000432, 0x0081 },    /* R1074  - DAC Volume Limit 5L */
+	{ 0x00000432, 0x0080 },    /* R1074  - DAC Volume Limit 5L */
 	{ 0x00000433, 0x0100 },    /* R1075  - Noise Gate Select 5L */
 	{ 0x00000434, 0x0000 },    /* R1076  - Output Path Config 5R */
 	{ 0x00000435, 0x0180 },    /* R1077  - DAC Digital Volume 5R */
-	{ 0x00000436, 0x0081 },    /* R1078  - DAC Volume Limit 5R */
+	{ 0x00000436, 0x0080 },    /* R1078  - DAC Volume Limit 5R */
 	{ 0x00000437, 0x0200 },    /* R1079  - Noise Gate Select 5R */
 	{ 0x00000438, 0x0000 },    /* R1080  - Output Path Config 6L */
 	{ 0x00000439, 0x0180 },    /* R1081  - DAC Digital Volume 6L */
-	{ 0x0000043A, 0x0081 },    /* R1082  - DAC Volume Limit 6L */
+	{ 0x0000043A, 0x0080 },    /* R1082  - DAC Volume Limit 6L */
 	{ 0x0000043B, 0x0400 },    /* R1083  - Noise Gate Select 6L */
 	{ 0x0000043C, 0x0000 },    /* R1084  - Output Path Config 6R */
 	{ 0x0000043D, 0x0180 },    /* R1085  - DAC Digital Volume 6R */
-	{ 0x0000043E, 0x0081 },    /* R1086  - DAC Volume Limit 6R */
+	{ 0x0000043E, 0x0080 },    /* R1086  - DAC Volume Limit 6R */
 	{ 0x0000043F, 0x0800 },    /* R1087  - Noise Gate Select 6R */
-	{ 0x00000440, 0x003F },    /* R1088  - DRE Enable */
+	{ 0x00000440, 0x8FFF },    /* R1088  - DRE Enable */
 	{ 0x00000450, 0x0000 },    /* R1104  - DAC AEC Control 1 */
 	{ 0x00000458, 0x0000 },    /* R1112  - Noise Gate Control */
 	{ 0x00000460, 0x0C40 },
@@ -886,14 +902,16 @@ static const struct reg_default florida_reg_default[] = {
 	{ 0x0000047C, 0x05DF },
 	{ 0x0000047D, 0x0001 },
 	{ 0x0000047E, 0x07FF },
+	{ 0x00000480, 0x0040 },    /* R1152  - Class W ANC Threshold 1 */
+	{ 0x00000481, 0x0040 },    /* R1153  - Class W ANC Threshold 2 */
 	{ 0x00000483, 0x0826 },
 	{ 0x00000490, 0x0069 },    /* R1168  - PDM SPK1 CTRL 1 */
 	{ 0x00000491, 0x0000 },    /* R1169  - PDM SPK1 CTRL 2 */
 	{ 0x00000492, 0x0069 },    /* R1170  - PDM SPK2 CTRL 1 */
 	{ 0x00000493, 0x0000 },    /* R1171  - PDM SPK2 CTRL 2 */
 	{ 0x000004A0, 0x3480 },    /* R1184  - HP1 Short Circuit Ctrl */
-	{ 0x000004A1, 0x3400 },    /* R1185  - HP2 Short Circuit Ctrl */
-	{ 0x000004A2, 0x3400 },    /* R1186  - HP3 Short Circuit Ctrl */
+	{ 0x000004A1, 0x3480 },    /* R1185  - HP2 Short Circuit Ctrl */
+	{ 0x000004A2, 0x3480 },    /* R1186  - HP3 Short Circuit Ctrl */
 	{ 0x00000500, 0x000C },    /* R1280  - AIF1 BCLK Ctrl */
 	{ 0x00000501, 0x0008 },    /* R1281  - AIF1 Tx Pin Ctrl */
 	{ 0x00000502, 0x0000 },    /* R1282  - AIF1 Rx Pin Ctrl */
@@ -932,16 +950,20 @@ static const struct reg_default florida_reg_default[] = {
 	{ 0x00000548, 0x1818 },    /* R1352  - AIF2 Frame Ctrl 2 */
 	{ 0x00000549, 0x0000 },    /* R1353  - AIF2 Frame Ctrl 3 */
 	{ 0x0000054A, 0x0001 },    /* R1354  - AIF2 Frame Ctrl 4 */
+#if defined(CONFIG_AUDIO_CODEC_FLORIDA)
 	{ 0x0000054B, 0x0002 },    /* R1355  - AIF2 Frame Ctrl 5 */
 	{ 0x0000054C, 0x0003 },    /* R1356  - AIF2 Frame Ctrl 6 */
 	{ 0x0000054D, 0x0004 },    /* R1357  - AIF2 Frame Ctrl 7 */
 	{ 0x0000054E, 0x0005 },    /* R1358  - AIF2 Frame Ctrl 8 */
+#endif
 	{ 0x00000551, 0x0000 },    /* R1361  - AIF2 Frame Ctrl 11 */
 	{ 0x00000552, 0x0001 },    /* R1362  - AIF2 Frame Ctrl 12 */
+#if defined(CONFIG_AUDIO_CODEC_FLORIDA)
 	{ 0x00000553, 0x0002 },    /* R1363  - AIF2 Frame Ctrl 13 */
 	{ 0x00000554, 0x0003 },    /* R1364  - AIF2 Frame Ctrl 14 */
 	{ 0x00000555, 0x0004 },    /* R1365  - AIF2 Frame Ctrl 15 */
 	{ 0x00000556, 0x0005 },    /* R1366  - AIF2 Frame Ctrl 16 */
+#endif
 	{ 0x00000559, 0x0000 },    /* R1369  - AIF2 Tx Enables */
 	{ 0x0000055A, 0x0000 },    /* R1370  - AIF2 Rx Enables */
 	{ 0x00000580, 0x000C },    /* R1408  - AIF3 BCLK Ctrl */
@@ -1511,11 +1533,17 @@ static const struct reg_default florida_reg_default[] = {
 	{ 0x00000C10, 0x1000 },    /* R3088  - GPIO Debounce Config */
 	{ 0x00000C18, 0x0000 },    /* R3096  - GP Switch 1 */
 	{ 0x00000C20, 0x8002 },    /* R3104  - Misc Pad Ctrl 1 */
+#if defined(CONFIG_AUDIO_CODEC_FLORIDA)
 	{ 0x00000C21, 0x0001 },    /* R3105  - Misc Pad Ctrl 2 */
+#else
+	{ 0x00000C21, 0x8001 },    /* R3105  - Misc Pad Ctrl 2 */
+#endif
+
 	{ 0x00000C22, 0x0000 },    /* R3106  - Misc Pad Ctrl 3 */
 	{ 0x00000C23, 0x0000 },    /* R3107  - Misc Pad Ctrl 4 */
 	{ 0x00000C24, 0x0000 },    /* R3108  - Misc Pad Ctrl 5 */
 	{ 0x00000C25, 0x0000 },    /* R3109  - Misc Pad Ctrl 6 */
+#if defined(CONFIG_AUDIO_CODEC_FLORIDA)
 	{ 0x00000C30, 0x0404 },    /* R3120  - Misc Pad Ctrl 7 */
 	{ 0x00000C31, 0x0004 },    /* R3121  - Misc Pad Ctrl 8 */
 	{ 0x00000C32, 0x0404 },    /* R3122  - Misc Pad Ctrl 9 */
@@ -1544,8 +1572,45 @@ static const struct reg_default florida_reg_default[] = {
 	{ 0x00000D1F, 0x0000 },    /* R3359  - IRQ2 Control */
 	{ 0x00000D53, 0x00FC },    /* R3411  - AOD IRQ Mask IRQ1 */
 	{ 0x00000D54, 0x00FC },    /* R3412  - AOD IRQ Mask IRQ2 */
+#endif
+
+#if defined(CONFIG_AUDIO_CODEC_FLORIDA)
+//none
+#else
+
+	{ 0x00000C30, 0x8282 },    /* R3120  - Misc Pad Ctrl 7 */
+	{ 0x00000C31, 0x0082 },    /* R3121  - Misc Pad Ctrl 8 */
+	{ 0x00000C32, 0x8282 },    /* R3122  - Misc Pad Ctrl 9 */
+	{ 0x00000C33, 0x8282 },    /* R3123  - Misc Pad Ctrl 10 */
+	{ 0x00000C34, 0x8282 },    /* R3124  - Misc Pad Ctrl 11 */
+	{ 0x00000C35, 0x8282 },    /* R3125  - Misc Pad Ctrl 12 */
+	{ 0x00000C36, 0x8282 },    /* R3126  - Misc Pad Ctrl 13 */
+	{ 0x00000C37, 0x8282 },    /* R3127  - Misc Pad Ctrl 14 */
+	{ 0x00000C38, 0x8282 },    /* R3128  - Misc Pad Ctrl 15 */
+	{ 0x00000C39, 0x8282 },    /* R3129  - Misc Pad Ctrl 16 */
+	{ 0x00000C3A, 0x8282 },    /* R3130  - Misc Pad Ctrl 17 */
+	{ 0x00000C3B, 0x8282 },    /* R3131  - Misc Pad Ctrl 18 */
+	{ 0x00000D08, 0xFFFF },    /* R3336  - Interrupt Status 1 Mask */
+	{ 0x00000D09, 0xFFFF },    /* R3337  - Interrupt Status 2 Mask */
+	{ 0x00000D0A, 0xFFFF },    /* R3338  - Interrupt Status 3 Mask */
+	{ 0x00000D0B, 0xFFFF },    /* R3339  - Interrupt Status 4 Mask */
+	{ 0x00000D0C, 0xFEFF },    /* R3340  - Interrupt Status 5 Mask */
+	{ 0x00000D0D, 0xFFFF },    /* R3341  - Interrupt Status 6 Mask */
+	{ 0x00000D0F, 0x0000 },    /* R3343  - Interrupt Control */
+	{ 0x00000D18, 0xFFFF },    /* R3352  - IRQ2 Status 1 Mask */
+	{ 0x00000D19, 0xFFFF },    /* R3353  - IRQ2 Status 2 Mask */
+	{ 0x00000D1A, 0xFFFF },    /* R3354  - IRQ2 Status 3 Mask */
+	{ 0x00000D1B, 0xFFFF },    /* R3355  - IRQ2 Status 4 Mask */
+	{ 0x00000D1C, 0xFFFF },    /* R3356  - IRQ2 Status 5 Mask */
+	{ 0x00000D1D, 0xFFFF },    /* R3357  - IRQ2 Status 6 Mask */
+	{ 0x00000D1F, 0x0000 },    /* R3359  - IRQ2 Control */
+	{ 0x00000D53, 0xFFFF },    /* R3411  - AOD IRQ Mask IRQ1 */
+	{ 0x00000D54, 0xFFFF },    /* R3412  - AOD IRQ Mask IRQ2 */
+#endif
+
 	{ 0x00000D56, 0x0000 },    /* R3414  - Jack detect debounce */
 	{ 0x00000E00, 0x0000 },    /* R3584  - FX_Ctrl1 */
+	{ 0x00000E01, 0x0000 },    /* R3585  - FX_Ctrl2 */
 	{ 0x00000E10, 0x6318 },    /* R3600  - EQ1_1 */
 	{ 0x00000E11, 0x6300 },    /* R3601  - EQ1_2 */
 	{ 0x00000E12, 0x0FC8 },    /* R3602  - EQ1_3 */
@@ -1650,7 +1715,6 @@ static const struct reg_default florida_reg_default[] = {
 	{ 0x00000ECD, 0x0000 },    /* R3789  - HPLPF4_2 */
 	{ 0x00000EE0, 0x0000 },    /* R3808  - ASRC_ENABLE */
 	{ 0x00000EE2, 0x0000 },    /* R3810  - ASRC_RATE1 */
-	{ 0x00000EE3, 0x4000 },    /* R3811  - ASRC_RATE2 */
 	{ 0x00000EF0, 0x0000 },    /* R3824  - ISRC 1 CTRL 1 */
 	{ 0x00000EF1, 0x0000 },    /* R3825  - ISRC 1 CTRL 2 */
 	{ 0x00000EF2, 0x0000 },    /* R3826  - ISRC 1 CTRL 3 */
@@ -1660,16 +1724,16 @@ static const struct reg_default florida_reg_default[] = {
 	{ 0x00000EF6, 0x0000 },    /* R3830  - ISRC 3 CTRL 1 */
 	{ 0x00000EF7, 0x0000 },    /* R3831  - ISRC 3 CTRL 2 */
 	{ 0x00000EF8, 0x0000 },    /* R3832  - ISRC 3 CTRL 3 */
+	{ 0x00000F00, 0x0000 },    /* R3840  - Clock Control */
 	{ 0x00000F01, 0x0000 },    /* R3841  - ANC_SRC */
 	{ 0x00000F08, 0x001c },    /* R3848  - ANC Coefficient */
 	{ 0x00000F09, 0x0000 },    /* R3849  - ANC Coefficient */
-	{ 0x00000F0A, 0x0000 },    /* R3850  - ANC Coefficient */
 	{ 0x00000F0B, 0x0000 },    /* R3851  - ANC Coefficient */
 	{ 0x00000F0C, 0x0000 },    /* R3852  - ANC Coefficient */
 	{ 0x00000F0D, 0x0000 },    /* R3853  - ANC Coefficient */
 	{ 0x00000F0E, 0x0000 },    /* R3854  - ANC Coefficient */
 	{ 0x00000F0F, 0x0000 },    /* R3855  - ANC Coefficient */
-	{ 0x00000F10, 0x0001 },    /* R3856  - ANC Coefficient */
+	{ 0x00000F10, 0x0000 },    /* R3856  - ANC Coefficient */
 	{ 0x00000F11, 0x0000 },    /* R3857  - ANC Coefficient */
 	{ 0x00000F12, 0x0000 },    /* R3858  - ANC Coefficient */
 	{ 0x00000F15, 0x0000 },    /* R3861  - FCL Filter Control */
@@ -1841,9 +1905,25 @@ static const struct reg_default florida_reg_default[] = {
 	{ 0x00000FC3, 0x0000 },    /* R4035  - ANC Coefficient */
 	{ 0x00000FC4, 0x0000 },    /* R4036  - ANC Coefficient */
 	{ 0x00001100, 0x0010 },    /* R4352  - DSP1 Control 1 */
+#if defined(CONFIG_AUDIO_CODEC_FLORIDA)
 	{ 0x00001200, 0x0010 },    /* R4608  - DSP2 Control 1 */
 	{ 0x00001300, 0x0010 },    /* R4864  - DSP3 Control 1 */
 	{ 0x00001400, 0x0010 },    /* R5120  - DSP4 Control 1 */
+#endif
+
+#if defined(CONFIG_AUDIO_CODEC_FLORIDA)
+//none
+#else
+	{ 0x00001101, 0x0000 },    /* R4353  - DSP1 Clocking 1 */
+	{ 0x00001200, 0x0010 },    /* R4608  - DSP2 Control 1 */
+	{ 0x00001201, 0x0000 },    /* R4609  - DSP2 Clocking 1 */
+	{ 0x00001300, 0x0010 },    /* R4864  - DSP3 Control 1 */
+	{ 0x00001301, 0x0000 },    /* R4865  - DSP3 Clocking 1 */
+	{ 0x00001400, 0x0010 },    /* R5120  - DSP4 Control 1 */
+	{ 0x00001401, 0x0000 },    /* R5121  - DSP4 Clocking 1 */
+	{ 0x00001404, 0x0000 },    /* R5124  - DSP4 Status 1 */
+#endif
+
 };
 
 static bool florida_is_rev_b_adsp_memory(unsigned int reg)
@@ -1927,7 +2007,6 @@ static bool florida_readable_register(struct device *dev, unsigned int reg)
 	case ARIZONA_PWM_DRIVE_3:
 	case ARIZONA_WAKE_CONTROL:
 	case ARIZONA_SEQUENCE_CONTROL:
-	case ARIZONA_SPARE_TRIGGERS:
 	case ARIZONA_SAMPLE_RATE_SEQUENCE_SELECT_1:
 	case ARIZONA_SAMPLE_RATE_SEQUENCE_SELECT_2:
 	case ARIZONA_SAMPLE_RATE_SEQUENCE_SELECT_3:
@@ -1939,8 +2018,10 @@ static bool florida_readable_register(struct device *dev, unsigned int reg)
 	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_5:
 	case ARIZONA_ALWAYS_ON_TRIGGERS_SEQUENCE_SELECT_6:
 	case ARIZONA_COMFORT_NOISE_GENERATOR:
+#if defined(CONFIG_AUDIO_CODEC_FLORIDA)
 	case ARIZONA_HP_DETECT_CALIBRATION_1:
 	case ARIZONA_HP_DETECT_CALIBRATION_2:
+#endif
 	case ARIZONA_HAPTICS_CONTROL_1:
 	case ARIZONA_HAPTICS_CONTROL_2:
 	case ARIZONA_HAPTICS_PHASE_1_INTENSITY:
@@ -1977,6 +2058,8 @@ static bool florida_readable_register(struct device *dev, unsigned int reg)
 	case ARIZONA_FLL1_CONTROL_5:
 	case ARIZONA_FLL1_CONTROL_6:
 	case ARIZONA_FLL1_CONTROL_7:
+	case ARIZONA_FLL1_LOOP_FILTER_TEST_1:
+	case ARIZONA_FLL1_NCO_TEST_0:
 	case ARIZONA_FLL1_SYNCHRONISER_1:
 	case ARIZONA_FLL1_SYNCHRONISER_2:
 	case ARIZONA_FLL1_SYNCHRONISER_3:
@@ -1993,6 +2076,8 @@ static bool florida_readable_register(struct device *dev, unsigned int reg)
 	case ARIZONA_FLL2_CONTROL_5:
 	case ARIZONA_FLL2_CONTROL_6:
 	case ARIZONA_FLL2_CONTROL_7:
+	case ARIZONA_FLL2_LOOP_FILTER_TEST_1:
+	case ARIZONA_FLL2_NCO_TEST_0:
 	case ARIZONA_FLL2_SYNCHRONISER_1:
 	case ARIZONA_FLL2_SYNCHRONISER_2:
 	case ARIZONA_FLL2_SYNCHRONISER_3:
@@ -2017,7 +2102,9 @@ static bool florida_readable_register(struct device *dev, unsigned int reg)
 	case ARIZONA_ACCESSORY_DETECT_MODE_1:
 	case ARIZONA_HEADPHONE_DETECT_1:
 	case ARIZONA_HEADPHONE_DETECT_2:
+#if defined(CONFIG_AUDIO_CODEC_FLORIDA)
 	case ARIZONA_HEADPHONE_DETECT_3:
+#endif
 	case ARIZONA_MICD_CLAMP_CONTROL:
 	case ARIZONA_MIC_DETECT_1:
 	case ARIZONA_MIC_DETECT_2:
@@ -2067,6 +2154,7 @@ static bool florida_readable_register(struct device *dev, unsigned int reg)
 	case ARIZONA_ADC_VCO_CAL_9:
 	case ARIZONA_OUTPUT_ENABLES_1:
 	case ARIZONA_OUTPUT_STATUS_1:
+	case ARIZONA_OUTPUT_STANDBY_1:
 	case ARIZONA_RAW_OUTPUT_STATUS_1:
 	case ARIZONA_OUTPUT_RATE_1:
 	case ARIZONA_OUTPUT_VOLUME_RAMP:
@@ -2128,8 +2216,10 @@ static bool florida_readable_register(struct device *dev, unsigned int reg)
 	case ARIZONA_HP1_SHORT_CIRCUIT_CTRL:
 	case ARIZONA_HP2_SHORT_CIRCUIT_CTRL:
 	case ARIZONA_HP3_SHORT_CIRCUIT_CTRL:
+#if defined(CONFIG_AUDIO_CODEC_FLORIDA)
 	case ARIZONA_HP_TEST_CTRL_1:
-	case ARIZONA_SPK_CTRL_5:
+#endif
+	case ARIZONA_SPK_CTRL_3:
 	case ARIZONA_AIF1_BCLK_CTRL:
 	case ARIZONA_AIF1_TX_PIN_CTRL:
 	case ARIZONA_AIF1_RX_PIN_CTRL:
@@ -2168,16 +2258,20 @@ static bool florida_readable_register(struct device *dev, unsigned int reg)
 	case ARIZONA_AIF2_FRAME_CTRL_2:
 	case ARIZONA_AIF2_FRAME_CTRL_3:
 	case ARIZONA_AIF2_FRAME_CTRL_4:
+#if defined(CONFIG_AUDIO_CODEC_FLORIDA)
 	case ARIZONA_AIF2_FRAME_CTRL_5:
 	case ARIZONA_AIF2_FRAME_CTRL_6:
 	case ARIZONA_AIF2_FRAME_CTRL_7:
 	case ARIZONA_AIF2_FRAME_CTRL_8:
+#endif
 	case ARIZONA_AIF2_FRAME_CTRL_11:
 	case ARIZONA_AIF2_FRAME_CTRL_12:
+#if defined(CONFIG_AUDIO_CODEC_FLORIDA)
 	case ARIZONA_AIF2_FRAME_CTRL_13:
 	case ARIZONA_AIF2_FRAME_CTRL_14:
 	case ARIZONA_AIF2_FRAME_CTRL_15:
 	case ARIZONA_AIF2_FRAME_CTRL_16:
+#endif
 	case ARIZONA_AIF2_TX_ENABLES:
 	case ARIZONA_AIF2_RX_ENABLES:
 	case ARIZONA_AIF3_BCLK_CTRL:
@@ -2915,7 +3009,6 @@ static bool florida_readable_register(struct device *dev, unsigned int reg)
 	case ARIZONA_ASRC_ENABLE:
 	case ARIZONA_ASRC_STATUS:
 	case ARIZONA_ASRC_RATE1:
-	case ARIZONA_ASRC_RATE2:
 	case ARIZONA_ISRC_1_CTRL_1:
 	case ARIZONA_ISRC_1_CTRL_2:
 	case ARIZONA_ISRC_1_CTRL_3:
@@ -3055,8 +3148,6 @@ static bool florida_readable_register(struct device *dev, unsigned int reg)
 	case ARIZONA_DSP4_SCRATCH_1:
 	case ARIZONA_DSP4_SCRATCH_2:
 	case ARIZONA_DSP4_SCRATCH_3:
-	case 0x460 ... 0x47E:
-	case 0x483:
 		return true;
 	default:
 		return florida_is_adsp_memory(dev, reg);
@@ -3068,11 +3159,13 @@ static bool florida_volatile_register(struct device *dev, unsigned int reg)
 	switch (reg) {
 	case ARIZONA_SOFTWARE_RESET:
 	case ARIZONA_DEVICE_REVISION:
+#if defined(CONFIG_AUDIO_CODEC_FLORIDA)
 	case ARIZONA_WRITE_SEQUENCER_CTRL_0:
 	case ARIZONA_WRITE_SEQUENCER_CTRL_1:
 	case ARIZONA_WRITE_SEQUENCER_CTRL_2:
 	case ARIZONA_HP_DETECT_CALIBRATION_1:
 	case ARIZONA_HP_DETECT_CALIBRATION_2:
+#endif
 	case ARIZONA_HAPTICS_STATUS:
 	case ARIZONA_SAMPLE_RATE_1_STATUS:
 	case ARIZONA_SAMPLE_RATE_2_STATUS:
@@ -3083,12 +3176,16 @@ static bool florida_volatile_register(struct device *dev, unsigned int reg)
 	case ARIZONA_MIC_DETECT_4:
 	case ARIZONA_HP_CTRL_1L:
 	case ARIZONA_HP_CTRL_1R:
+#if defined(CONFIG_AUDIO_CODEC_FLORIDA)
 	case ARIZONA_HP_CTRL_2L:
 	case ARIZONA_HP_CTRL_2R:
 	case ARIZONA_HP_CTRL_3L:
 	case ARIZONA_HP_CTRL_3R:
+#endif
 	case ARIZONA_HEADPHONE_DETECT_2:
+#if defined(CONFIG_AUDIO_CODEC_FLORIDA)
 	case ARIZONA_HEADPHONE_DETECT_3:
+#endif
 	case ARIZONA_INPUT_ENABLES_STATUS:
 	case ARIZONA_OUTPUT_STATUS_1:
 	case ARIZONA_RAW_OUTPUT_STATUS_1:
@@ -3098,7 +3195,9 @@ static bool florida_volatile_register(struct device *dev, unsigned int reg)
 	case ARIZONA_ADC_VCO_CAL_7:
 	case ARIZONA_ADC_VCO_CAL_8:
 	case ARIZONA_ADC_VCO_CAL_9:
+#if defined(CONFIG_AUDIO_CODEC_FLORIDA)
 	case ARIZONA_HP_TEST_CTRL_1:
+#endif
 	case ARIZONA_SLIMBUS_RX_PORT_STATUS:
 	case ARIZONA_SLIMBUS_TX_PORT_STATUS:
 	case ARIZONA_INTERRUPT_STATUS_1:
@@ -3128,7 +3227,6 @@ static bool florida_volatile_register(struct device *dev, unsigned int reg)
 	case ARIZONA_AOD_IRQ_RAW_STATUS:
 	case ARIZONA_FX_CTRL2:
 	case ARIZONA_ASRC_STATUS:
-	case ARIZONA_CLOCK_CONTROL:
 	case ARIZONA_DSP_STATUS:
 	case ARIZONA_DSP1_STATUS_1:
 	case ARIZONA_DSP1_STATUS_2:

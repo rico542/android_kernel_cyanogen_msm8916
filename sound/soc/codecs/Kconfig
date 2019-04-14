@@ -79,6 +79,7 @@ config SND_SOC_ALL_CODECS
 	select SND_SOC_WM0010 if SPI_MASTER
 	select SND_SOC_WM1250_EV1 if I2C
 	select SND_SOC_WM2000 if I2C
+	select SND_SOC_WM2200 if I2C
 	select SND_SOC_WM5100 if I2C
 	select SND_SOC_WM5102 if MFD_WM5102
 	select SND_SOC_FLORIDA if MFD_FLORIDA
@@ -124,6 +125,7 @@ config SND_SOC_ALL_CODECS
 	select SND_SOC_WM8995 if SND_SOC_I2C_AND_SPI
 	select SND_SOC_WM8996 if I2C
 	select SND_SOC_WM8997 if MFD_WM8997
+	select SND_SOC_WM8998 if MFD_WM8998
 	select SND_SOC_VEGAS if MFD_VEGAS
 	select SND_SOC_WM9081 if I2C
 	select SND_SOC_WM9090 if I2C
@@ -589,6 +591,9 @@ config SND_SOC_WM8996
 	tristate
 
 config SND_SOC_WM8997
+	tristate
+
+config SND_SOC_WM8998
 	tristate
 
 config SND_SOC_VEGAS
