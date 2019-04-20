@@ -647,6 +647,9 @@ int32_t msm_sensor_driver_is_special_support(
 int32_t msm_sensor_driver_probe(void *setting,
 	struct msm_sensor_info_t *probed_info, char *entity_name)
 {
+#ifndef  CONFIG_VEGETALTE_COMMON
+	uint8_t                              i = 0;
+#endif
 	int32_t                              rc = 0;
 	struct msm_sensor_ctrl_t            *s_ctrl = NULL;
 	struct msm_camera_cci_client        *cci_client = NULL;

@@ -29,10 +29,17 @@
 
 struct msm_actuator_ctrl_t;
 
+#ifdef CONFIG_VEGETALTE_COMMON
+enum msm_actuator_state_t {
+	ACTUATOR_POWER_UP,
+	ACTUATOR_POWER_DOWN,
+};
+#else
 enum msm_actuator_state_t {
 	ACTUATOR_POWER_DOWN,
 	ACTUATOR_POWER_UP,
 };
+#endif
 
 struct msm_actuator_func_tbl {
 	int32_t (*actuator_i2c_write_b_af)(struct msm_actuator_ctrl_t *,
